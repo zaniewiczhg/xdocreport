@@ -25,6 +25,7 @@
 package org.apache.poi.xwpf.converter.core.styles;
 
 import org.apache.poi.xwpf.converter.core.Color;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigInteger;
@@ -64,6 +65,7 @@ import org.apache.poi.xwpf.converter.core.styles.run.RunFontSizeValueProvider;
 import org.apache.poi.xwpf.converter.core.styles.run.RunFontStyleBoldValueProvider;
 import org.apache.poi.xwpf.converter.core.styles.run.RunFontStyleItalicValueProvider;
 import org.apache.poi.xwpf.converter.core.styles.run.RunFontStyleStrikeValueProvider;
+import org.apache.poi.xwpf.converter.core.styles.run.RunFontStyleVertAlginValueProvider;
 import org.apache.poi.xwpf.converter.core.styles.run.RunTextHighlightingValueProvider;
 import org.apache.poi.xwpf.converter.core.styles.run.RunUnderlineValueProvider;
 import org.apache.poi.xwpf.converter.core.styles.table.TableAlignmentValueProvider;
@@ -663,6 +665,11 @@ public class XWPFStylesDocument
         return org.apache.poi.xwpf.converter.core.openxmlformats.styles.run.RunFontStyleStrikeValueProvider.INSTANCE.getValue( run,
                                                                                                                                paragraph,
                                                                                                                                this );
+    }
+    
+    public Integer getFontStyleVertAlgin( XWPFRun run )
+    {
+        return RunFontStyleVertAlginValueProvider.INSTANCE.getValue( run, this );
     }
 
     public Color getFontColor( XWPFRun run )

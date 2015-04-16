@@ -41,6 +41,7 @@ import org.apache.poi.xwpf.converter.core.TableWidth;
 import org.apache.poi.xwpf.converter.core.XWPFDocumentVisitor;
 import org.apache.poi.xwpf.converter.core.styles.paragraph.ParagraphIndentationHangingValueProvider;
 import org.apache.poi.xwpf.converter.core.styles.paragraph.ParagraphIndentationLeftValueProvider;
+import org.apache.poi.xwpf.converter.core.styles.run.RunFontStyleVertAlginValueProvider;
 import org.apache.poi.xwpf.converter.core.utils.DxaUtil;
 import org.apache.poi.xwpf.converter.core.utils.StringUtils;
 import org.apache.poi.xwpf.converter.pdf.PdfOptions;
@@ -143,6 +144,12 @@ public class PdfMapper extends
 	private StylableHeaderFooter pdfFooter;
 
 	private Integer expectedPageCount;
+	
+	private Integer vertAlgin;
+	
+	private boolean pageNumber;
+	
+	IITextContainer container;
 
 	public PdfMapper(XWPFDocument document, OutputStream out,
 			PdfOptions options, Integer expectedPageCount) throws Exception {
@@ -433,6 +440,7 @@ public class PdfMapper extends
 	@Override
 	protected void visitRun(XWPFRun docxRun, boolean pageNumber, String url,
 			IITextContainer pdfParagraphContainer) throws Exception {
+		this.pageNumber=pageNumber;
 		// Font family
 		String fontFamilyAscii = stylesDocument.getFontFamilyAscii(docxRun);
 		String fontFamilyEastAsia = stylesDocument
@@ -459,6 +467,9 @@ public class PdfMapper extends
 		if (strike != null && strike) {
 			fontStyle |= Font.STRIKETHRU;
 		}
+
+		//verticalAlgin
+		vertAlgin=stylesDocument.getFontStyleVertAlgin(docxRun);
 
 		// Font color
 		Color fontColor = stylesDocument.getFontColor(docxRun);
@@ -513,7 +524,7 @@ public class PdfMapper extends
 			pdfParagraph.setListItemText(null);
 		}
 
-		IITextContainer container = pdfParagraphContainer;
+		container = pdfParagraphContainer;
 		if (url != null) {
 			// URL is not null, generate a PDF hyperlink.
 			StylableAnchor pdfAnchor = new StylableAnchor();
@@ -600,6 +611,16 @@ public class PdfMapper extends
 				pageNumber, font, fontAsian, fontComplex);
 	}
 
+	@Override
+    protected void visitStyleText(XWPFRun run, String text) throws Exception {
+    	Font font = currentRunFontAscii;
+		Font fontAsian = currentRunFontEastAsia;
+		Font fontComplex = currentRunFontHAnsi;
+		createAndAddChunks(container, text, 
+				currentRunUnderlinePatterns, currentRunBackgroundColor,
+				pageNumber, font, fontAsian, fontComplex);
+    }
+
 	private Chunk createTextChunk(String text, boolean pageNumber,
 			Font currentRunFont, UnderlinePatterns currentRunUnderlinePatterns,
 			Color currentRunBackgroundColor) {
@@ -671,7 +692,37 @@ public class PdfMapper extends
 		Font chunkFont = getFont(font, fontAsian, fontComplex, currentGroup);
 		Chunk chunk = createTextChunk(sbuf.toString(), pageNumber, chunkFont,
 				underlinePatterns, backgroundColor);
+		setVertAlginOnChunk(chunk);
 		parent.addElement(chunk);
+	}
+	
+	private void setVertAlginOnChunk(Chunk chunk)
+	{
+		if(vertAlgin == null)
+		{
+			return;
+		}
+		Font chunkFont=chunk.getFont();
+		float fontSize=chunkFont.getSize();
+		float scriptSize=fontSize/2;
+		scriptSize=scriptSize!=0?scriptSize:1;
+		chunkFont.setSize(scriptSize);
+		chunk.setFont(chunkFont);
+		
+		switch(vertAlgin)
+		{
+			//superscript
+			case 2:
+				float textRiseForSuperScript=scriptSize;
+				chunk.setTextRise(textRiseForSuperScript);
+				break;
+			//subscript
+			case 3:
+				float textRiseForSubScript=scriptSize/3;
+				textRiseForSubScript=textRiseForSubScript!=0?textRiseForSubScript:1;
+				chunk.setTextRise(-textRiseForSubScript);
+				break;
+		}
 	}
 
 	private Font getFont(Font font, Font fontAsian, Font fontComplex,
